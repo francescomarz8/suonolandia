@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suonolandia 2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="start">
+  <p class="title">🐙 Suonolandia</p>
+  <button id="startBtn" aria-label="Gioca">▶️<small>Gioca!</small></button>
+</div>
+
+<header>
+  <div class="logo"><span id="mascot" aria-hidden="true">🐙</span><h1 id="title">Suonolandia</h1>
+    <button id="save" class="btn sec" aria-label="Salva la canzone (tieni premuto)" title="Per i grandi: tieni premuto per registrare 4 giri e scaricare la canzone (.wav)">💾</button>
+    <button id="fs" class="btn sec" aria-label="Schermo intero" title="Schermo intero">⤢</button>
+  </div>
+  <div id="midi" role="status"></div>
+  <div class="group">
+    <button id="play" class="btn" aria-label="Suona" title="Suona / Ferma (barra spaziatrice)">▶️</button>
+    <label class="tempo" title="Lento / Veloce">🐢<input type="range" id="tempo" min="60" max="160" step="1" aria-label="Velocità">🐇</label>
+  </div>
+  <button id="undo" class="btn sec" title="Torna indietro" disabled>↩️<small>Indietro</small></button>
+</header>
+
+<div id="app">
+  <nav id="rooms" aria-label="Stanze">
+    <button class="roomBtn" data-room="ritmo" style="--c:#FFD23F" aria-label="Stanza del ritmo" title="Ritmo">🥁</button>
+    <button class="roomBtn" data-room="voce" style="--c:#C9A7F5" aria-label="Stanza della voce" title="Voce">🎤</button>
+    <button class="roomBtn" data-room="tastiera" style="--c:#8CC8F2" aria-label="Stanza della tastiera" title="Tastiera">🎹</button>
+  </nav>
+
+  <main>
+    <section class="room" id="room-ritmo" aria-label="Ritmo">
+      <div id="grid"></div>
+      <aside class="tools">
+        <button id="dice" class="btn sec" title="Inventa un ritmo a sorpresa">🎲<small>Sorpresa</small></button>
+        <button id="steps" class="btn sec" title="Canzone corta o lunga">🐛<small>Corto</small></button>
+        <button id="clear" class="btn sec" title="Cancella il ritmo">🧽<small>Pulisci</small></button>
+      </aside>
+    </section>
+
+    <section class="room" id="room-voce" aria-label="La mia voce">
+      <div class="recwrap">
+        <button id="rec" aria-label="Registra la voce">🎤</button>
+        <div id="hint" role="status">Premi e canta!</div>
+      </div>
+      <div id="clips"></div>
+    </section>
+
+    <section class="room" id="room-tastiera" aria-label="Tastiera">
+      <div class="kbtop">
+        <div id="sounds" style="display:contents"></div>
+        <span class="spacer"></span>
+        <button id="write" class="btn tog" aria-pressed="false" title="Scrivi nella riga 🎵 le note che suoni">✏️<small>Scrivi</small></button>
+        <button id="echo" class="btn sec tog" aria-pressed="false" title="Eco">📣<small>Eco</small></button>
+        <button id="magic" class="btn sec tog" aria-pressed="true" title="Magia: solo le note che stanno sempre bene. Spegnila per avere anche i tasti neri.">🌈<small>Magia</small></button>
+      </div>
+      <div class="stripwrap"><span class="stripIcon" aria-hidden="true">🎵</span><div id="strip"></div></div>
+      <div id="keys"></div>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

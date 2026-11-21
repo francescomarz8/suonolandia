@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suonolandia – prova Duo</title>
+<style>
+:root{--bg:#FFF4D6;--ink:#2B2140;--paper:#FFFDF6;--green:#3DDC97;--red:#FF5A5F;--yellow:#FFD23F;--blue:#4D9DE0;--line:#2B214022}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:var(--bg);color:var(--ink);
+  font-family:ui-rounded,"Arial Rounded MT Bold","Segoe UI",system-ui,sans-serif;font-size:16px;line-height:1.4}
+h1{font-size:24px;margin:0 0 4px} h2{font-size:18px;margin:0 0 8px}
+p{margin:0 0 8px} .muted{opacity:.7;font-size:14px}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:14px}
+.card{background:var(--paper);border:3px solid var(--ink);border-radius:18px;padding:14px;box-shadow:0 4px 0 var(--ink)}
+button{font:inherit;font-weight:800;color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:12px;
+  padding:8px 14px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+button.go{background:var(--green)} button.stop{background:var(--red)} button:disabled{opacity:.4}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.devs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.dev{border:2px solid var(--ink);border-radius:12px;padding:10px;background:#fff}
+.dev h3{margin:0 0 4px;font-size:16px;display:flex;gap:8px;align-items:center}
+.dot{width:12px;height:12px;border-radius:50%;background:#bbb;flex:none}
+.dot.hit{background:var(--green)}
+.tag{display:inline-block;border:2px solid var(--ink);border-radius:8px;padding:0 6px;margin:2px 2px 0 0;font-size:13px;font-weight:700;background:var(--yellow)}
+.tag.cc{background:#CDE7FF} .tag.sys{background:#E5D9FF}
+dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0 0;font-size:14px} dt{font-weight:800} dd{margin:0}
+#log{height:260px;overflow:auto;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:8px;white-space:pre}
+input[type=number]{font:inherit;width:80px;padding:6px;border:3px solid var(--ink);border-radius:10px}
+input[type=range]{width:220px}
+label{font-weight:700}
+.q{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;border-top:1px solid var(--line);padding:8px 0}
+.q:first-of-type{border-top:0}
+.q select{font:inherit;padding:4px 8px;border:2px solid var(--ink);border-radius:8px;background:#fff}
+textarea{width:100%;height:150px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--ink);border-radius:12px;padding:8px}
+ol{margin:0;padding-left:22px} li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="card">
+  <h1>🐙 Suonolandia – prova Duo</h1>
+  <p>Questa pagina non fa nessun suono. Serve a capire cosa mandano i due strumenti e se il DrumBrute segue il tempo del computer.</p>
+  <ol>
+    <li>Collega DrumBrute Impact e MPK mini via USB. Sul DrumBrute premi <b>Sync</b> finché si accende <b>USB</b>.</li>
+    <li>Premi <b>Collega</b> qui sotto e accetta la richiesta del browser.</li>
+    <li>Su ogni strumento: premi tutti i pad uno alla volta, qualche tasto, gira tutte le manopole, muovi il joystick.</li>
+    <li>Prova <b>Start</b> e <b>Stop</b> del tempo, rispondi alle domande, poi premi <b>Copia il rapporto</b> e incollalo a Claude.</li>
+  </ol>
+  <div class="row" style="margin-top:10px">
+    <button id="connect" class="go">Collega</button>
+    <span id="status" class="muted">Non collegato.</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Strumenti</h2>
+  <div id="devs" class="devs"><p class="muted">Nessuno strumento ancora.</p></div>
+</div>
+
+<div class="card">
+  <h2>Tempo dal computer (clock)</h2>
+  <div class="row">
+    <label>BPM <input type="number" id="bpm" min="40" max="240" value="100"></label>
+    <input type="range" id="bpmR" min="40" max="240" value="100" aria-label="BPM">
+    <button id="start" class="go" disabled>Start</button>
+    <button id="stop" class="stop" disabled>Stop</button>
+    <label><input type="checkbox" id="always"> manda il clock anche da fermo</label>
+  </div>
+  <p class="muted" style="margin-top:8px">Manda a: <span id="outs">—</span></p>
+  <p class="muted" id="clockInfo">Fermo.</p>
+</div>
+
+<div class="card">
+  <h2>Domande (quello che vedi e senti tu)</h2>
+  <div class="q"><span>1. Con il DrumBrute su USB e un pattern pronto: premendo <b>Start</b> qui, parte da solo?</span>
+    <select data-q="Start dal computer fa partire il DrumBrute"><option>—</option><option>Sì</option><option>No</option><option>Solo dopo aver premuto Play sul DrumBrute</option></select></div>
+  <div class="q"><span>2. Cambiando i BPM mentre suona, il DrumBrute cambia velocità?</span>
+    <select data-q="Il DrumBrute segue i cambi di BPM"><option>—</option><option>Sì, subito</option><option>Sì, con ritardo</option><option>No</option></select></div>
+  <div class="q"><span>3. Premendo <b>Stop</b> qui, il DrumBrute si ferma?</span>
+    <select data-q="Stop dal computer ferma il DrumBrute"><option>—</option><option>Sì</option><option>No</option></select></div>
+  <div class="q"><span>4. Dopo Stop e di nuovo Start, riparte dal primo passo?</span>
+    <select data-q="Riparte dal primo passo"><option>—</option><option>Sì</option><option>No</option></select></div>
+  <div class="q"><span>5. Dopo un minuto, la luce <b>USB</b> del DrumBrute è ancora accesa (non è tornato su INT)?</span>
+    <select data-q="Resta su USB"><option>—</option><option>Sì</option><option>No, torna su INT</option></select></div>
+  <div class="q"><span>6. Con l'arpeggiatore dell'MPK acceso e Start premuto, l'arpeggio va a tempo con i BPM di questa pagina?</span>
+    <select data-q="Arpeggiatore MPK segue il clock"><option>—</option><option>Sì</option><option>No</option><option>Non provato</option></select></div>
+</div>
+
+<div class="card">
+  <h2>Messaggi ricevuti</h2>
+  <div class="row" style="margin-bottom:8px"><button id="clearLog">Pulisci</button><span class="muted">I tic del clock non sono elencati uno per uno: sono contati nella scheda dello strumento.</span></div>
+  <div id="log"></div>
+</div>
+
+<div class="card">
+  <h2>Rapporto</h2>
+  <div class="row" style="margin-bottom:8px"><button id="copy" class="go">Copia il rapporto</button><span id="copied" class="muted"></span></div>
+  <textarea id="report" readonly></textarea>
+</div>
+
+</div>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const NOTE=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const noteName=n=>NOTE[n%12]+(Math.floor(n/12)-1);
+let access=null;
+const devs=new Map();   // id ingresso -> statistiche
+const outOn=new Map();  // id uscita -> true/false
+const logLines=[];
+
+function stat(input){
+  if(!devs.has(input.id))devs.set(input.id,{name:input.name,maker:input.manufacturer||'',notes:new Map(),ccs:new Map(),
+    bend:null,prog:new Set(),other:new Set(),ticks:0,tickTimes:[],bpm:null,transport:[],count:0,lastHit:0});
+  return devs.get(input.id);
+}
+function log(dev,text){
+  const t=new Date().toLocaleTimeString('it-IT',{hour12:false})+'.'+String(Date.now()%1000).padStart(3,'0');
+  logLines.push(t+'  '+dev.padEnd(26).slice(0,26)+'  '+text);
+  if(logLines.length>400)logLines.shift();
+  const el=$('#log');el.textContent=logLines.join('\n');el.scrollTop=el.scrollHeight;
+}
+function onMsg(e){
+  const s=stat(e.target),d=e.data,st=d[0];s.count++;s.lastHit=performance.now();
+  if(st>=0xF0){
+    if(st===0xF8){s.ticks++;s.tickTimes.push(e.timeStamp);if(s.tickTimes.length>49)s.tickTimes.shift();
+      if(s.tickTimes.length>24){const span=s.tickTimes[s.tickTimes.length-1]-s.tickTimes[0];s.bpm=Math.round(60000/(span/(s.tickTimes.length-1)*24)*10)/10}
+      return}
+    const names={0xFA:'Start',0xFB:'Continue',0xFC:'Stop',0xFE:'Active sensing',0xF2:'Song position',0xF0:'SysEx'};
+    const n=names[st]||('Sistema 0x'+st.toString(16));
+    if(st===0xFE){s.other.add(n);return}
+    s.transport.push(n);if(s.transport.length>8)s.transport.shift();
+    log(s.name,n);render();return;
+  }
+  const cmd=st&0xF0,ch=(st&0x0F)+1;
+  if(cmd===0x90&&d[2]>0){
+    const k=ch+':'+d[1];const r=s.notes.get(k)||{ch,n:d[1],hits:0,minV:127,maxV:0};
+    r.hits++;r.minV=Math.min(r.minV,d[2]);r.maxV=Math.max(r.maxV,d[2]);s.notes.set(k,r);
+    log(s.name,`Nota ON   can ${ch}  nota ${d[1]} (${noteName(d[1])})  forza ${d[2]}`);
+  }else if(cmd===0x80||cmd===0x90){
+    log(s.name,`Nota OFF  can ${ch}  nota ${d[1]} (${noteName(d[1])})`);
+  }else if(cmd===0xB0){
+    const k=ch+':'+d[1];const r=s.ccs.get(k)||{ch,n:d[1],min:127,max:0,last:0,logged:0};
+    r.min=Math.min(r.min,d[2]);r.max=Math.max(r.max,d[2]);r.last=d[2];s.ccs.set(k,r);
+    if(performance.now()-r.logged>150){r.logged=performance.now();log(s.name,`Controllo  can ${ch}  CC ${d[1]}  valore ${d[2]}`)}
+  }else if(cmd===0xE0){
+    const v=((d[2]<<7)|d[1])-8192;const b=s.bend||{ch,min:0,max:0,logged:0};
+    b.min=Math.min(b.min,v);b.max=Math.max(b.max,v);b.ch=ch;s.bend=b;
+    if(performance.now()-b.logged>150){b.logged=performance.now();log(s.name,`Pitch bend  can ${ch}  ${v}`)}
+  }else if(cmd===0xC0){s.prog.add(ch+':'+d[1]);log(s.name,`Program change  can ${ch}  ${d[1]}`)}
+  else if(cmd===0xD0||cmd===0xA0){s.other.add('Aftertouch can '+ch)}
+  else log(s.name,'Altro: '+[...d].map(x=>x.toString(16)).join(' '));
+  render();
+}
+
+function render(){
+  const box=$('#devs');
+  if(!access){return}
+  const ins=[...access.inputs.values()],outs=[...access.outputs.values()];
+  $('#status').textContent=`${ins.length} ingressi, ${outs.length} uscite.`;
+  box.innerHTML=ins.length?'':'<p class="muted">Nessuno strumento trovato. Controlla il cavo USB e che nessun altro programma musicale sia aperto.</p>';
+  ins.forEach(i=>{
+    const s=stat(i),d=document.createElement('div');d.className='dev';
+    const notes=[...s.notes.values()].sort((a,b)=>a.ch-b.ch||a.n-b.n);
+    const ccs=[...s.ccs.values()].sort((a,b)=>a.ch-b.ch||a.n-b.n);
+    d.innerHTML=`<h3><span class="dot ${performance.now()-s.lastHit<300?'hit':''}"></span>${esc(i.name)}</h3>
+      <div class="muted">${esc(i.manufacturer||'—')} · ${i.state} · ${s.count} messaggi</div>
+      <dl>
+        <dt>Note</dt><dd>${notes.map(r=>`<span class="tag">can ${r.ch} · ${r.n} ${noteName(r.n)} ×${r.hits}</span>`).join('')||'—'}</dd>
+        <dt>Manopole</dt><dd>${ccs.map(r=>`<span class="tag cc">can ${r.ch} · CC ${r.n} (${r.min}–${r.max})</span>`).join('')||'—'}</dd>
+        <dt>Joystick</dt><dd>${s.bend?`<span class="tag cc">pitch bend can ${s.bend.ch} (${s.bend.min}…${s.bend.max})</span>`:'—'}</dd>
+        <dt>Clock</dt><dd>${s.ticks?`${s.ticks} tic · ${s.bpm?s.bpm+' BPM':'…'}`:'nessuno'} ${s.transport.map(t=>`<span class="tag sys">${t}</span>`).join('')}</dd>
+        <dt>Altro</dt><dd>${[...s.prog].map(p=>`<span class="tag sys">prog ${p}</span>`).join('')}${[...s.other].map(p=>`<span class="tag sys">${p}</span>`).join('')||(s.prog.size?'':'—')}</dd>
+      </dl>`;
+    box.append(d);
+  });
+  const o=$('#outs');o.innerHTML='';
+  if(!outs.length)o.textContent='nessuna uscita';
+  outs.forEach(out=>{
+    if(!outOn.has(out.id))outOn.set(out.id,true);
+    const l=document.createElement('label');l.style.marginRight='12px';
+    const c=document.createElement('input');c.type='checkbox';c.checked=outOn.get(out.id);c.onchange=()=>outOn.set(out.id,c.checked);
+    l.append(c,' '+out.name);o.append(l);
+  });
+  $('#start').disabled=$('#stop').disabled=!outs.length;
+  buildReport();
+}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ---------- clock ---------- */
+let running=false,nextTick=0,clockTimer=null,sentTicks=0;
+const bpm=()=>Math.min(240,Math.max(40,+$('#bpm').value||100));
+const targets=()=>access?[...access.outputs.values()].filter(o=>outOn.get(o.id)):[];
+function pump(){
+  const ahead=performance.now()+120,iv=60000/bpm()/24;
+  if(nextTick<performance.now()-200)nextTick=performance.now()+10;
+  while(nextTick<ahead){targets().forEach(o=>{try{o.send([0xF8],nextTick)}catch(e){}});nextTick+=iv;sentTicks++}
+  $('#clockInfo').textContent=(running?'In marcia':'Solo clock')+` · ${bpm()} BPM · ${sentTicks} tic mandati`;
+}
+function ensurePump(){if(!clockTimer){nextTick=performance.now()+20;clockTimer=setInterval(pump,25)}}
+function stopPump(){clearInterval(clockTimer);clockTimer=null}
+$('#start').onclick=()=>{
+  if(running)return;running=true;sentTicks=0;
+  if(!clockTimer){
+    const t=performance.now()+30;targets().forEach(o=>o.send([0xFA],t));
+    nextTick=t+1;clockTimer=setInterval(pump,25);pump();
+  }else{targets().forEach(o=>o.send([0xFA],nextTick-1))}
+  log('→ computer','Start mandato a: '+(targets().map(o=>o.name).join(', ')||'nessuno'));
+};
+$('#stop').onclick=()=>{
+  targets().forEach(o=>o.send([0xFC]));running=false;
+  if(!$('#always').checked)stopPump();
+  $('#clockInfo').textContent='Fermo.';log('→ computer','Stop mandato');
+};
+$('#always').onchange=e=>{if(e.target.checked)ensurePump();else if(!running)stopPump()};
+$('#bpm').oninput=()=>{$('#bpmR').value=bpm()};
+$('#bpmR').oninput=e=>{$('#bpm').value=e.target.value};
+
+/* ---------- rapporto ---------- */
+function buildReport(){
+  const L=[];
+  L.push('RAPPORTO PROVA DUO — '+new Date().toLocaleString('it-IT'));
+  L.push('Browser: '+navigator.userAgent);
+  if(access){
+    L.push('','USCITE: '+([...access.outputs.values()].map(o=>o.name+' ['+(o.manufacturer||'?')+']').join(' | ')||'nessuna'));
+    access.inputs.forEach(i=>{
+      const s=stat(i);
+      L.push('','INGRESSO: '+i.name+' ['+(i.manufacturer||'?')+'] '+i.state+' — '+s.count+' messaggi');
+      const notes=[...s.notes.values()].sort((a,b)=>a.ch-b.ch||a.n-b.n);
+      L.push('  Note: '+(notes.map(r=>`can${r.ch}:${r.n}(${noteName(r.n)}) x${r.hits} forza ${r.minV}-${r.maxV}`).join(', ')||'nessuna'));
+      const ccs=[...s.ccs.values()].sort((a,b)=>a.ch-b.ch||a.n-b.n);
+      L.push('  CC: '+(ccs.map(r=>`can${r.ch}:CC${r.n} ${r.min}-${r.max}`).join(', ')||'nessuno'));
+      L.push('  Pitch bend: '+(s.bend?`can${s.bend.ch} ${s.bend.min}…${s.bend.max}`:'no'));
+      L.push('  Clock ricevuto: '+(s.ticks?`${s.ticks} tic, ~${s.bpm||'?'} BPM`:'no')+' · trasporto: '+(s.transport.join(', ')||'niente'));
+      L.push('  Program change: '+([...s.prog].join(', ')||'no')+' · altro: '+([...s.other].join(', ')||'no'));
+    });
+  }else L.push('MIDI non collegato.');
+  L.push('','RISPOSTE:');
+  document.querySelectorAll('[data-q]').forEach(q=>L.push('  '+q.dataset.q+': '+q.value));
+  L.push('','AUDIO (dichiarato dal browser): '+audioInfo);
+  $('#report').value=L.join('\n');
+}
+let audioInfo='non misurato';
+function measureAudio(){
+  try{
+    const c=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+    const ms=x=>x==null?'?':Math.round(x*1000)+' ms';
+    audioInfo=`base ${ms(c.baseLatency)}, uscita ${ms(c.outputLatency)}, ${c.sampleRate} Hz`;
+    c.close();
+  }catch(e){audioInfo='non disponibile'}
+}
+document.querySelectorAll('[data-q]').forEach(q=>q.onchange=buildReport);
+$('#copy').onclick=async()=>{
+  buildReport();const t=$('#report');
+  try{await navigator.clipboard.writeText(t.value);$('#copied').textContent='Copiato ✔'}
+  catch(e){t.select();document.execCommand('copy');$('#copied').textContent='Copiato ✔ (o seleziona e copia a mano)'}
+};
+$('#clearLog').onclick=()=>{logLines.length=0;$('#log').textContent=''};
+
+/* ---------- collegamento ---------- */
+$('#connect').onclick=async()=>{
+  if(!navigator.requestMIDIAccess){$('#status').textContent='Questo browser non supporta il MIDI: usa Chrome o Edge.';return}
+  try{
+    access=await navigator.requestMIDIAccess({sysex:false});
+    const bind=()=>{access.inputs.forEach(i=>{i.onmidimessage=onMsg});render()};
+    bind();access.onstatechange=bind;measureAudio();render();
+    setInterval(()=>{if(access)render()},1000);
+  }catch(e){$('#status').textContent='Permesso MIDI negato. Concedilo dal lucchetto accanto all’indirizzo e riprova.'}
+};
+buildReport();
+</script>
+</body>
+</html>
