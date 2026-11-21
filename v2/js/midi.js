@@ -24,7 +24,9 @@ export const midiInputs=()=>access?[...access.inputs.values()].filter(i=>i.state
 export const midiOutputs=()=>access?[...access.outputs.values()].filter(o=>o.state!=='disconnected'):[];
 export const learnState=()=>learning;
 // "Impara i pad": i prossimi 6 pad premuti diventano, in ordine, le 6 righe della batteria
-export function startLearn(name){const c=deviceCfg(name);c.drumMap={};c.sound='drums';learning={name,idx:0};saveDuo();emit('duo')}
+// I pad imparati suonano la batteria; tutti gli altri tasti dello stesso strumento continuano a suonare le note.
+// Ogni pad è ricordato come canale:nota, così pad e tasti si distinguono anche se usano le stesse note.
+export function startLearn(name){const c=deviceCfg(name);c.drumMap={};if(c.sound==='none')c.sound='screen';learning={name,idx:0};saveDuo();emit('duo')}
 export function stopLearn(){learning=null;emit('duo')}
 
 function hit(id){
@@ -34,20 +36,22 @@ function hit(id){
 export function onMIDI(e){
   const d=e.data,st=d[0];if(st>=0xF0||!A.ctx)return;
   const name=e.target.name,cfg=deviceCfg(name),n=d[1],v=d[2],cmd=st&0xf0,ch=st&0x0f;
+  const pad=(ch+1)+':'+n;
   if(cmd===0x90&&v>0){
     if(learning&&learning.name===name){
-      if(cfg.drumMap[n])return; // stesso pad premuto due volte
-      const id=DRUMS[learning.idx].id;cfg.drumMap[n]=id;hit(id);
+      if(cfg.drumMap[pad])return; // stesso pad premuto due volte
+      const id=DRUMS[learning.idx].id;cfg.drumMap[pad]=id;hit(id);
       if(++learning.idx>=DRUMS.length)learning=null;
       saveDuo();emit('duo');return;
     }
     if(cfg.sound==='none')return;
-    if(cfg.sound==='drums'){const id=cfg.drumMap[n]||GM_DRUMS[n];if(id)hit(id);return}
+    if(cfg.drumMap[pad]){hit(cfg.drumMap[pad]);return}
+    if(cfg.sound==='drums'){if(GM_DRUMS[n])hit(GM_DRUMS[n]);return}
     if(cfg.sound==='screen'&&ch===9&&GM_DRUMS[n]){hit(GM_DRUMS[n]);return}
-    const m=magicNote(n);sounding[name+':'+n]=m; // con la Magia la nota va sul tasto buono più vicino
+    const m=magicNote(n);sounding[name+':'+pad]=m; // con la Magia la nota va sul tasto buono più vicino
     press(m,.35+v/127*.65,cfg.sound==='screen'?undefined:cfg.sound,name);
   }else if(cmd===0x80||(cmd===0x90&&v===0)){
-    const k=name+':'+n;
+    const k=name+':'+pad;
     if(k in sounding){release(sounding[k],false,name);delete sounding[k]}
   }else if(cmd===0xB0&&n===64)setPedal(v>=64);
 }

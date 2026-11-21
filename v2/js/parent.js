@@ -54,7 +54,7 @@ function renderDevices(){
     const mapped=Object.keys(cfg.drumMap).length;
     const info=el('p','muted');
     info.textContent=learning?`Premi il pad per: ${DRUMS[learn.idx].emoji} ${DRUMS[learn.idx].name} (${learn.idx+1} di ${DRUMS.length})`
-      :cfg.sound==='drums'?(mapped?`${mapped} pad imparati.`:'Nessun pad imparato: uso le note standard della batteria.'):'';
+      :mapped?`${mapped} pad imparati: suonano la batteria, gli altri tasti suonano le note.`:cfg.sound==='drums'?'Tutti i tasti suonano la batteria (note standard).':'';
     box.append(row,info);
   });
   $('#pOuts').textContent=outs.length?'Il tempo va a: '+outs.map(o=>o.name).join(', '):'Nessuna uscita MIDI: il tempo non viene mandato.';

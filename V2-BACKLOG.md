@@ -164,14 +164,15 @@ Setup: Arturia DrumBrute Impact (in USB sync mode) + Akai MPK mini, both on USB.
 - Browsers can send precisely timed MIDI: each message takes a timestamp, so clock ticks are scheduled ahead, not fired by a timer.
 - Windows 11 is rolling out a new MIDI system in 2026 that lets several apps share one device. On older Windows only one app can hold a device, so close other music apps.
 
-### What could not be confirmed online (check on the real devices)
+### What the real devices showed (test of 21 Nov 2026, Windows laptop, Chrome)
 
-- Default note numbers and channel of the DrumBrute pads, and whether its sequencer also sends its notes over USB while playing.
-- Whether pressing play on screen starts the DrumBrute by itself in USB mode, or its own play button must be armed.
-- MPK mini default pad notes, knob numbers and joystick assignment (they depend on which PROG is selected), and whether its arpeggiator can follow external clock.
-- Whether both need no driver on Windows (very likely, not confirmed).
+- **DrumBrute Impact:** starts on Start, follows tempo changes at once, stops on Stop, restarts from step one, and stays on USB sync. All confirmed by the user.
+- Its sequencer and pads **do send notes over USB**, on channel 10, notes 36–57. It also sends back the clock and transport it receives, and two controllers (CC 51 and 54, channel 1). V2 ignores its notes by default ("Niente, suona da solo"), so nothing doubles.
+- **MPK Mini Mk II:** keys and pads are both on channel 1. Keys were seen from note 48 to 72; pads sent 44–51 (and 36), so four pads share notes with the four lowest keys. No knob or joystick messages were recorded in the test.
+- Its arpeggiator did **not** follow the computer's clock. That needs "external clock" set in Akai's MPK mini editor.
+- The browser reported 10 ms base audio latency and no output latency figure, so the timing slider has to be set by ear.
 
-Because of this, the plan does not rely on defaults: step 10.1 measures them, and 10.4 lets the app learn them.
+Consequences: pads are now learned as channel + note, and learned pads play drums while the rest of the same device plays notes. To separate pads from keys cleanly on the MPK, move its pads to channel 10 in Akai's editor (or avoid the four lowest keys).
 
 ### Items
 
