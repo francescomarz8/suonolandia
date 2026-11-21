@@ -1,10 +1,9 @@
 // Strumenti MIDI via USB. Duo: ogni strumento ha il suo suono, e il computer manda il tempo (clock).
-import {$,state,rt,isBlack,DRUMS,SOUNDS,on,emit,bounce} from './core.js';
+import {$,state,rt,magicNote,DRUMS,SOUNDS,on,emit,bounce} from './core.js';
 import {A,drum} from './audio.js';
 import {press,release,setPedal} from './keys.js';
 
 const GM_DRUMS={35:'kick',36:'kick',38:'snare',40:'snare',39:'clap',42:'hat',44:'hat',46:'hat',45:'boing',47:'boing',48:'boing',50:'boing'};
-const midiNote=n=>state.magic&&isBlack(n)?n-1:n; // con la Magia i tasti neri suonano il bianco vicino
 
 // Impostazioni Duo, ricordate per nome dello strumento.
 // sound: 'screen' (come lo schermo) | un suono | 'drums' (i pad suonano la batteria) | 'none' (suona da solo)
@@ -20,6 +19,7 @@ export const DEVICE_SOUNDS=[['screen','Come lo schermo'],...SOUNDS.filter(s=>s.i
   ['voice','🎤 Voce registrata'],['drums','🥁 Batteria (pad)'],['none','Niente (suona da solo)']];
 
 let access=null,learning=null; // learning: {name, idx}
+const sounding={}; // strumento:tasto -> nota suonata
 export const midiInputs=()=>access?[...access.inputs.values()].filter(i=>i.state!=='disconnected'):[];
 export const midiOutputs=()=>access?[...access.outputs.values()].filter(o=>o.state!=='disconnected'):[];
 export const learnState=()=>learning;
@@ -44,9 +44,11 @@ export function onMIDI(e){
     if(cfg.sound==='none')return;
     if(cfg.sound==='drums'){const id=cfg.drumMap[n]||GM_DRUMS[n];if(id)hit(id);return}
     if(cfg.sound==='screen'&&ch===9&&GM_DRUMS[n]){hit(GM_DRUMS[n]);return}
-    press(midiNote(n),.35+v/127*.65,cfg.sound==='screen'?undefined:cfg.sound,name);
+    const m=magicNote(n);sounding[name+':'+n]=m; // con la Magia la nota va sul tasto buono più vicino
+    press(m,.35+v/127*.65,cfg.sound==='screen'?undefined:cfg.sound,name);
   }else if(cmd===0x80||(cmd===0x90&&v===0)){
-    if(cfg.sound!=='drums'&&cfg.sound!=='none')release(midiNote(n),false,name);
+    const k=name+':'+n;
+    if(k in sounding){release(sounding[k],false,name);delete sounding[k]}
   }else if(cmd===0xB0&&n===64)setPedal(v>=64);
 }
 export function initMIDI(){

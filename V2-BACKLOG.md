@@ -1,7 +1,7 @@
 # Suonolandia V2 — backlog
 
 V1 is frozen as tag `v1.0` and stays online at https://francescomarz8.github.io/suonolandia/.
-**Status (21 Nov 2026), on branch `v2`:** built and tested with simulated devices — 1.1 rooms, 1.2 modules, 1.3 autosave with recordings, 1.4 song shelf, 1.5 offline, 1.6 export/import, 1.8 parent corner (volume, saves, MIDI), 7.1 8/16 steps, 10.1 test page, 10.2 clock out, 10.3 sound per device (in the parent corner), 10.4 pad learning, 10.6 timing nudge, 6.1 two dice with musical rolls and multi-level undo, 6.3 sleeping rows (a small 💤 toggle on each row). Not built: 1.7 avatars, play timer, 10.5 knobs and joystick, 10.7 player corners, 10.8–10.11. Not yet tried with the real DrumBrute and MPK.
+**Status (21 Nov 2026), on branch `v2`:** built and tested with simulated devices — 1.1 rooms, 1.2 modules, 1.3 autosave with recordings, 1.4 song shelf, 1.5 offline, 1.6 export/import, 1.8 parent corner (volume, saves, MIDI), 7.1 8/16 steps, 10.1 test page, 10.2 clock out, 10.3 sound per device (in the parent corner), 10.4 pad learning, 10.6 timing nudge, 6.1 two dice with musical rolls and multi-level undo, 6.3 sleeping rows (a small 💤 toggle on each row), 2.11 glowing keys with the song choosing its key, 2.12 Magia on a held 🪄 (off by default), 2.13 slide, 2.14 pitch per drum row, 6.6b paint a melody, 6.7b listen mode, 9.1c secret combos (three so far). Not built: 9.1b star spot (needs the band, 9.1), 1.7 avatars, play timer, 10.5 knobs and joystick, 10.7 player corners, 10.8–10.11. Not yet tried with the real DrumBrute and MPK.
 
 Sizes: **S** = an evening, **M** = a few sessions, **L** = a real project.
 ★ = your idea, ＋ = added.
@@ -48,6 +48,10 @@ Sizes: **S** = an evening, **M** = a few sessions, **L** = a real project.
 | 2.8 | ＋ MIDI: octave buttons, pitch and mod wheel, knobs mapped to effects, pads mapped to drums | M |
 | 2.9 | ＋ Two players: MIDI keyboard on one sound, screen keys on another | S |
 | 2.10 | ＋ MIDI out and clock, so it can drive a real synth such as the Dato Duo | M |
+| 2.11 | ★ Glowing keys (Tastiera): every key always plays, but the five notes of a pentatonic glow softly, the home note a little brighter. The song picks the key, not the child: it is worked out from the notes already in the melody, and an empty song gets a random one. The glow only changes between loops or when the song changes. Happy / sad = major / minor over the same root (ties into 2.6). Screen only; 10.9 covers real keyboards. Later, after the dice. | S |
+| 2.12 | ★ Magia harder to switch on: off by default; a 1.5 s press on a shaking 🪄 with a filling ring switches it on (sparkle burst and chime), sparkles drift over the keys while it is on, one tap switches it off. Magia snaps to the glowing pentatonic of 2.11 instead of hiding black keys. Note: this reverses the V1 choice of Magia on by default, so with it off black keys are visible and playable again. | S |
+| 2.13 | ＋ Slide (glide between notes) toggle on Tastiera, shown as a playground slide. From Dato Duo. | S |
+| 2.14 | ＋ Pitch per drum row: drag up or down on a row's animal to make that drum higher or lower. From Dato Drum. | S |
 
 ## 3. Effects ★
 
@@ -95,7 +99,9 @@ Sizes: **S** = an evening, **M** = a few sessions, **L** = a real project.
 | 6.4 | Style dice with characters: rock, disco, march, lullaby, robot | M |
 | 6.5 | "Few ↔ many" slider per row that spreads hits evenly | S |
 | 6.6 | Melody shapes: stairs up, stairs down, jumps, echo of what you just played | S |
+| 6.6b | ＋ Paint a melody: drag a finger across the melody row and the line becomes notes (up = higher), snapped to the song's notes. One gesture that could replace most of the 6.6 shape buttons. From Chrome Music Lab Kandinsky and Kapu Bloom Tunes. | S |
 | 6.7 | Evolve mode: the pattern changes slightly every four loops | S |
+| 6.7b | ＋ "Listen" mode: the song keeps evolving by itself, for a calm break or bedtime. Merge with 6.7. From Incredibox. | S |
 | 6.8 | Surprise sounds: random kit and instrument | S |
 | 6.9 | ＋ Robot friend: you play a few notes, it answers with a variation | M |
 
@@ -124,6 +130,8 @@ Sizes: **S** = an evening, **M** = a few sessions, **L** = a real project.
 | # | Item | Size |
 |---|---|---|
 | 9.1 | A band on stage: each row is an animal that dances when its sound plays | M |
+| 9.1b | ＋ Star spot: drag one band animal onto a spotlight; it plays solo on the keys while the others keep going, kept on the song's notes. Can double as the Duo solo (10.10). From Toca Band. | M |
+| 9.1c | ＋ Secret combos: certain combinations (all drum rows plus a voice clip, a full rainbow on the melody row) trigger a surprise animation and a short flourish. A wordless reward found by playing. From Incredibox. | S–M |
 | 9.2 | Missions without words ("wake the elephant", "fill the rainbow") | M |
 | 9.3 | Copy-me game: the app plays a rhythm, the child taps it back | M |
 | 9.4 | Themes: jungle, space, sea — change colours, characters and sound sets together | L |

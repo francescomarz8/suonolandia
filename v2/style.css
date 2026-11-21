@@ -169,7 +169,22 @@ main{flex:1;min-width:0;min-height:0;display:flex}
   left:calc(var(--w)*var(--i) + var(--gap)*(var(--i) - .5) - var(--bw)/2);
   border-radius:8px 8px 16px 16px;padding-bottom:6px;box-shadow:inset 0 -10px 0 var(--c);z-index:2;font-size:0}
 .key.black.down{background:var(--c)}
-#keys.magic .key.black{display:none}
+/* i tasti buoni per la canzone brillano; gli altri restano un po' più spenti ma suonano lo stesso */
+.key{position:relative}
+.key.black{position:absolute}
+.key:not(.glow):not(.down){filter:saturate(.55) brightness(.93)}
+.key.glow:not(.down){animation:glow 2.4s ease-in-out infinite}
+@keyframes glow{50%{filter:brightness(1.2) saturate(1.15)}}
+.key.home::after{content:"⭐";position:absolute;top:8px;left:0;right:0;text-align:center;font-size:20px}
+.key.black.home::after{top:4px;font-size:14px}
+#keys.magic .key:not(.glow){opacity:.4}
+.spark{display:none;position:absolute;top:calc(8% + var(--n)*9%);left:calc(6% + var(--n)*16%);font-size:26px;z-index:3;pointer-events:none}
+#keys.magic .spark{display:block;animation:spark 3.2s ease-in-out infinite;animation-delay:calc(var(--n)*-.55s)}
+@keyframes spark{0%,100%{transform:translate(0,0) scale(.7);opacity:.2}50%{transform:translate(18px,-22px) scale(1.2);opacity:1}}
+#magic.holding{animation:fill var(--hold,1500ms) linear forwards,wiggle .22s infinite}
+.confetti{position:fixed;inset:0;z-index:20;pointer-events:none;overflow:hidden}
+.confetti span{position:absolute;top:0;line-height:1}
+.cell.mel{touch-action:none}
 
 /* ---------- le mie canzoni ---------- */
 #room-canzoni{background:#EAFBF1}
@@ -229,5 +244,5 @@ dialog#parent input[type=range]{width:220px}
   #clips{overflow:visible}
 }
 @media (prefers-reduced-motion:reduce){
-  #startBtn,#rec.recording,#gear.recording,#write.sel,.cell.cursor,.clip.playing .go,.wiggle{animation:none}
+  #startBtn,#rec.recording,#gear.recording,#write.sel,.cell.cursor,.clip.playing .go,.wiggle,.key.glow,#keys.magic .spark{animation:none}
 }

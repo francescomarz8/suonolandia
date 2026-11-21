@@ -23,6 +23,20 @@ export const SOUNDS=[
 export const SOLF=['Do','Do♯','Re','Re♯','Mi','Fa','Fa♯','Sol','Sol♯','La','La♯','Si'];
 export const NOTE_COLORS=['#FF5A5F','#FF7A3D','#FF9F1C','#FFB92E','#FFD23F','#3DDC97','#36D0A6','#2EC4B6','#3EB1C8','#4D9DE0','#7A7DE2','#9B5DE5'];
 export const PENTA=[60,62,64,67,69,72];
+// Le cinque note "che stanno sempre bene" partono dalla nota di casa della canzone (state.root).
+export const PENTA_STEPS=[0,2,4,7,9];
+export const inScale=n=>PENTA_STEPS.includes(((n-state.root)%12+12)%12);
+export const isHome=n=>((n-state.root)%12+12)%12===0;
+export const scaleNotes=()=>{const a=[];for(let n=60;n<=76;n++)if(inScale(n))a.push(n);return a};
+// con la Magia accesa ogni nota scivola sulla nota buona più vicina
+export const magicNote=n=>{
+  if(!state.magic||inScale(n))return n;
+  for(let d=1;d<7;d++){ // resta sui tasti dello schermo (60–76) quando si può
+    if(inScale(n-d)&&(n-d>=60||n<60))return n-d;
+    if(inScale(n+d)&&(n+d<=76||n>76))return n+d;
+  }
+  return n;
+};
 export const isBlack=n=>[1,3,6,8,10].includes(n%12);
 export const KEYMAP={KeyA:60,KeyW:61,KeyS:62,KeyE:63,KeyD:64,KeyF:65,KeyT:66,KeyG:67,KeyY:68,KeyH:69,KeyU:70,KeyJ:71,KeyK:72,KeyO:73,KeyL:74,KeyP:75,Semicolon:76};
 export const FX=[{id:'normal',emoji:'🙂',name:'Normale'},{id:'topo',emoji:'🐭',name:'Topolino'},{id:'orso',emoji:'🐻',name:'Orso'},{id:'rev',emoji:'🙃',name:'Al contrario'}];
@@ -31,7 +45,7 @@ export const MAX_CLIPS=6, MAX_REC=8, MAX_VOICES=10, SAVE_LOOPS=4;
 
 // Quello che viene salvato (il progetto).
 export const blankState=()=>{
-  const s={bpm:100,sound:'piano',magic:true,steps:8,room:'ritmo',activeClipId:null,sleep:{},pattern:{},melody:Array(MAX_STEPS).fill(null)};
+  const s={bpm:100,sound:'piano',magic:false,slide:false,root:0,steps:8,room:'ritmo',activeClipId:null,sleep:{},pitch:{},pattern:{},melody:Array(MAX_STEPS).fill(null)};
   DRUMS.forEach(d=>s.pattern[d.id]=Array(MAX_STEPS).fill(false));return s;
 };
 export const state=blankState();
@@ -43,6 +57,9 @@ export function applyState(s){
   if(s.bpm>=60&&s.bpm<=160)state.bpm=s.bpm;
   if(SOUNDS.some(x=>x.id===s.sound))state.sound=s.sound;
   if(typeof s.magic==='boolean')state.magic=s.magic;
+  if(typeof s.slide==='boolean')state.slide=s.slide;
+  if(Number.isInteger(s.root)&&s.root>=0&&s.root<12)state.root=s.root;
+  if(s.pitch)DRUMS.forEach(d=>{const p=s.pitch[d.id];if(Number.isInteger(p)&&p>=-4&&p<=4&&p)state.pitch[d.id]=p});
   if(s.steps===8||s.steps===16)state.steps=s.steps;
   if(['ritmo','voce','tastiera'].includes(s.room))state.room=s.room;
   state.activeClipId=s.activeClipId??null;

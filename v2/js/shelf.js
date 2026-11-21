@@ -39,7 +39,8 @@ export async function openProject(id){
 }
 export async function newProject(){
   if(projects.length>=MAX_SONGS)return;
-  const p={id:newId(),cover:freeCover(),state:blankState(),updated:Date.now()};
+  const st=blankState();st.root=[0,5,7][Math.floor(Math.random()*3)]; // Do, Fa o Sol: cinque note tutte sui tasti bianchi
+  const p={id:newId(),cover:freeCover(),state:st,updated:Date.now()};
   projects.push(p);await putProject(p);await switchTo(p);
 }
 async function deleteProject(id){

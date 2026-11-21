@@ -3,7 +3,7 @@ import {rt,state,MAX_VOICES} from './core.js';
 
 export const A={ctx:null,master:null,synthBus:null,echoSend:null,saveDest:null,noiseBuf:null};
 const live=[];
-let seqVoice=null;
+let seqVoice=null,lastF=0,lastT=-9;
 
 export function initAudio(){
   const ctx=A.ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
@@ -30,8 +30,11 @@ export function makeVoice(midi,vel,t,soundId,seq){
   const f=440*2**((midi-69)/12),peak=.3*vel;
   const g=ctx.createGain();g.connect(A.synthBus);g.gain.setValueAtTime(0,t);
   const nodes=[];let rel=.15;
+  // Scivolo: la nota parte dall'altezza di quella prima e scivola fin qui
+  const glide=state.slide&&soundId!=='bird'&&lastF&&t-lastT<1.5?lastF/f:1;lastF=f;lastT=t;
   const osc=(type,freq,dest,gain)=>{
-    const o=ctx.createOscillator();o.type=type;o.frequency.setValueAtTime(freq,t);
+    const o=ctx.createOscillator();o.type=type;o.frequency.setValueAtTime(freq*glide,t);
+    if(glide!==1)o.frequency.exponentialRampToValueAtTime(freq,t+.14);
     if(gain!=null){const og=ctx.createGain();og.gain.value=gain;o.connect(og);og.connect(dest)}else o.connect(dest);
     o.start(t);nodes.push(o);return o};
   switch(soundId){
@@ -55,7 +58,8 @@ export function makeVoice(midi,vel,t,soundId,seq){
       g.gain.linearRampToValueAtTime(peak*.7,t+.03);rel=.1;break}
     case 'voice':{
       const src=ctx.createBufferSource();src.buffer=clipBuffer(rt.activeClip);
-      src.playbackRate.value=clipRate(rt.activeClip)*2**((midi-60)/12);
+      const rate=clipRate(rt.activeClip)*2**((midi-60)/12);
+      src.playbackRate.setValueAtTime(rate*glide,t);if(glide!==1)src.playbackRate.exponentialRampToValueAtTime(rate,t+.14);
       src.connect(g);src.start(t);nodes.push(src);
       g.gain.setValueAtTime(vel*.8,t);rel=.08;break}
   }
@@ -89,19 +93,20 @@ function tone(t,type,f0,f1,sweep,dur,gainVal){
 }
 export function drum(id,t){
   t=t||A.ctx.currentTime;
+  const k=2**((state.pitch[id]||0)/6); // ogni scatto vale un tono: su = acuto, giù = grave
   switch(id){
-    case 'kick': tone(t,'sine',160,45,.12,.38,.95);break;
-    case 'snare':noise(t,.2,'highpass',1200,.7,.5);tone(t,'triangle',220,130,.08,.12,.4);break;
-    case 'hat':  noise(t,.06,'highpass',7000,.7,.28);break;
-    case 'clap':{const g=noise(t,.24,'bandpass',1500,1.2,.7);
+    case 'kick': tone(t,'sine',160*k,45*k,.12,.38,.95);break;
+    case 'snare':noise(t,.2,'highpass',1200*k,.7,.5);tone(t,'triangle',220*k,130*k,.08,.12,.4);break;
+    case 'hat':  noise(t,.06,'highpass',Math.min(12000,7000*k),.7,.28);break;
+    case 'clap':{const g=noise(t,.24,'bandpass',1500*k,1.2,.7);
       g.gain.setValueAtTime(.7,t);g.gain.exponentialRampToValueAtTime(.15,t+.011);
       g.gain.setValueAtTime(.7,t+.012);g.gain.exponentialRampToValueAtTime(.15,t+.023);
       g.gain.setValueAtTime(.7,t+.024);g.gain.exponentialRampToValueAtTime(.001,t+.24);break}
-    case 'boing':tone(t,'triangle',170,560,.2,.32,.5);break;
+    case 'boing':tone(t,'triangle',170*k,560*k,.2,.32,.5);break;
     case 'voice':
       if(!rt.activeClip)return;
       if(seqVoice){try{seqVoice.stop(t)}catch(e){}}
-      seqVoice=playClipAt(rt.activeClip,t);try{seqVoice.stop(t+3)}catch(e){}break;
+      seqVoice=playClipAt(rt.activeClip,t,k);try{seqVoice.stop(t+3)}catch(e){}break;
   }
 }
 
@@ -116,8 +121,8 @@ export function clipBuffer(c){
   }
   return c.rev;
 }
-export function playClipAt(c,t){
-  const ctx=A.ctx,src=ctx.createBufferSource();src.buffer=clipBuffer(c);src.playbackRate.value=clipRate(c);
+export function playClipAt(c,t,k=1){
+  const ctx=A.ctx,src=ctx.createBufferSource();src.buffer=clipBuffer(c);src.playbackRate.value=clipRate(c)*k;
   const g=ctx.createGain();g.gain.value=.75;src.connect(g);g.connect(A.master);src.start(t);return src;
 }
 export function trimAndNormalize(buf){

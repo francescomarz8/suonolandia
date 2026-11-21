@@ -1,5 +1,6 @@
 // La tastiera: tasti sullo schermo, tasti del computer, suoni, Magia, Scrivi.
-import {$,el,state,rt,SOUNDS,DRUMS,SOLF,NOTE_COLORS,KEYMAP,isBlack,persist,bounce,wiggle} from './core.js';
+import {$,el,state,rt,SOUNDS,DRUMS,SOLF,NOTE_COLORS,KEYMAP,inScale,isHome,magicNote,persist,on,bounce,wiggle} from './core.js';
+import {burst,chime} from './fun.js';
 import {A,makeVoice,blip,drum} from './audio.js';
 import {togglePlay,stepDur,muteUntil} from './seq.js';
 import {paintMelody,showCursor,bounceMel} from './grid.js';
@@ -16,14 +17,16 @@ export function buildKeys(){
     k.innerHTML=(black?'':'<span>'+SOLF[n%12]+'</span>')+'<kbd>'+KEYLABEL[n]+'</kbd>';keyEls[n]=k;return k};
   whites.forEach(n=>box.append(mk(n,false)));
   Object.entries(blacks).forEach(([n,i])=>{const k=mk(+n,true);k.style.setProperty('--i',i);box.append(k)});
+  for(let i=0;i<6;i++){const sp=el('span','spark','✨');sp.style.setProperty('--n',i);sp.setAttribute('aria-hidden','true');box.append(sp)}
+  paintGlow();
   // lettere giuste per la tastiera di questo computer
   if(navigator.keyboard&&navigator.keyboard.getLayoutMap)navigator.keyboard.getLayoutMap().then(m=>{
     for(const code in KEYMAP){const ch=m.get(code);if(ch)keyEls[KEYMAP[code]].querySelector('kbd').textContent=ch.toUpperCase()}
   }).catch(()=>{});
 
   const ptr=new Map();
-  const noteAt=e=>{const t=document.elementFromPoint(e.clientX,e.clientY);const k=t&&t.closest&&t.closest('.key');return k?+k.dataset.note:null};
-  box.addEventListener('pointerdown',e=>{e.preventDefault();box.setPointerCapture(e.pointerId);
+  const noteAt=e=>{const t=document.elementFromPoint(e.clientX,e.clientY);const k=t&&t.closest&&t.closest('.key');return k?magicNote(+k.dataset.note):null};
+  box.addEventListener('pointerdown',e=>{e.preventDefault();try{box.setPointerCapture(e.pointerId)}catch(err){}
     const n=noteAt(e);ptr.set(e.pointerId,n);if(n!=null)press(n,.85)});
   box.addEventListener('pointermove',e=>{if(!ptr.has(e.pointerId))return;
     const n=noteAt(e),old=ptr.get(e.pointerId);if(n===old)return;
@@ -79,24 +82,34 @@ export function buildSounds(){
   });
   setSound(state.sound==='voice'&&!rt.activeClip?'piano':state.sound);
 }
-export function setMagic(v){
+// I tasti buoni per questa canzone brillano; la nota di casa ha una stellina. Tutti i tasti suonano comunque.
+export function paintGlow(){
+  for(const n in keyEls){keyEls[n].classList.toggle('glow',inScale(+n));keyEls[n].classList.toggle('home',isHome(+n))}
+}
+on('key',paintGlow);
+// Magia: ogni nota scivola sul tasto che brilla più vicino. Si accende tenendo premuta la bacchetta.
+export function setMagic(v,celebrate){
   state.magic=v;const b=$('#magic');b.classList.toggle('sel',v);b.setAttribute('aria-pressed',v);
   $('#keys').classList.toggle('magic',v);persist();
+  if(v&&celebrate){burst(['✨','🪄','⭐'],18);chime(5)}
+}
+export function setSlide(v){
+  state.slide=v;const b=$('#slide');b.classList.toggle('sel',v);b.setAttribute('aria-pressed',v);persist();
 }
 
 /* ---------- tasti del computer ---------- */
+const keyDown={}; // tasto premuto -> nota suonata (la Magia può averla spostata)
 addEventListener('keydown',e=>{
   if(!A.ctx||e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.code==='Space'){e.preventDefault();if(!e.repeat)togglePlay();return}
   if(e.repeat)return;
   if(e.code in KEYMAP){
-    e.preventDefault();const n=KEYMAP[e.code];
-    if(state.magic&&isBlack(n))return;
-    press(n,.85);return}
+    e.preventDefault();const n=magicNote(KEYMAP[e.code]);
+    keyDown[e.code]=n;press(n,.85);return}
   const m=/^Digit([1-6])$/.exec(e.code);
   if(m){const d=DRUMS[+m[1]-1];
     if(d.id==='voice'&&!rt.activeClip)wiggle($('#rec'));else drum(d.id);
     bounce($('#row-'+d.id))}
 });
-addEventListener('keyup',e=>{if(e.code in KEYMAP)release(KEYMAP[e.code])});
+addEventListener('keyup',e=>{if(e.code in keyDown){release(keyDown[e.code]);delete keyDown[e.code]}});
 addEventListener('blur',()=>{pedal=false;[...held.keys()].forEach(releaseKey)});

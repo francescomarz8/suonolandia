@@ -1,9 +1,10 @@
 // Avvio, stanze, comandi comuni, schermo e tocco.
-import {$,state,rt,loadState,persist,on} from './core.js';
+import {$,state,rt,loadState,persist,on,holdButton} from './core.js';
 import {A,initAudio,drum} from './audio.js';
 import {togglePlay,startFrames} from './seq.js';
-import {buildGrid,rollBig,rollSmall,clearAll,undo,clearUndo,setSteps,paintSteps} from './grid.js';
-import {buildKeys,buildSounds,setSound,setMagic,setWrite} from './keys.js';
+import {buildGrid,rollBig,rollSmall,clearAll,undo,clearUndo,setSteps,paintSteps,setListen,isListening} from './grid.js';
+import {buildKeys,buildSounds,setSound,setMagic,setSlide,setWrite,paintGlow} from './keys.js';
+import {armCombos} from './fun.js';
 import {loadClips,renderClips,toggleRec,_addTestClip} from './voice.js';
 import {initMIDI,onMIDI,_setAccess,duo} from './midi.js';
 import {initShelf,renderShelf,openProject,newProject,exportProject,importProject} from './shelf.js';
@@ -28,7 +29,7 @@ async function showProject(stay){
   await loadClips();
   buildGrid();renderClips();
   setSound(state.sound==='voice'&&!rt.activeClip?'piano':state.sound);
-  setMagic(state.magic);setWrite(false);paintSteps();
+  setMagic(state.magic);setSlide(state.slide);paintGlow();setWrite(false);paintSteps();
   $('#tempo').value=state.bpm;clearUndo();
   if(!stay)setRoom('ritmo');
   renderShelf();
@@ -67,12 +68,16 @@ let echoOn=false;
 $('#echo').onclick=e=>{echoOn=!echoOn;const b=e.currentTarget;b.classList.toggle('sel',echoOn);b.setAttribute('aria-pressed',echoOn);
   A.echoSend.gain.setTargetAtTime(echoOn?.5:0,A.ctx.currentTime,.05)};
 $('#write').onclick=()=>setWrite(!rt.writeMode);
-$('#magic').onclick=()=>setMagic(!state.magic);
+// Magia: un tocco la spegne; per accenderla bisogna tenere premuta la bacchetta
+let magicWasOn=false;
+holdButton($('#magic'),1500,()=>{if(!magicWasOn)setMagic(true,true)},()=>{magicWasOn=state.magic;if(magicWasOn)setMagic(false)});
+$('#slide').onclick=()=>setSlide(!state.slide);
+$('#listen').onclick=()=>setListen(!isListening());
 $('#startBtn').onclick=async()=>{
   $('#startBtn').disabled=true;
   initAudio();applyVolume();A.ctx.resume();
   await initShelf();await loadClips();
-  buildGrid();buildKeys();buildSounds();renderClips();setMagic(state.magic);paintSteps();setRoom(state.room);
+  buildGrid();buildKeys();buildSounds();renderClips();setMagic(state.magic);setSlide(state.slide);paintSteps();setRoom(state.room);armCombos();
   initParent();initMIDI();
   $('#start').remove();drum('boing');startFrames();
   document.body.dataset.ready='1';
@@ -82,5 +87,5 @@ $('#startBtn').onclick=async()=>{
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 // per le prove automatiche
-window.__suono={state,rt,A,duo,togglePlay,rollBig,rollSmall,clearAll,undo,setSteps,setRoom,_addTestClip,
+window.__suono={state,rt,A,duo,setMagic,setSlide,setListen,togglePlay,rollBig,rollSmall,clearAll,undo,setSteps,setRoom,_addTestClip,
   openProject,newProject,exportProject,importProject,onMIDI,_setAccess};

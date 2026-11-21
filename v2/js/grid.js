@@ -1,5 +1,5 @@
-// La griglia del ritmo, la riga della melodia (anche nella stanza Tastiera), dadi, pulisci, indietro.
-import {$,el,state,rt,ROWS,DRUMS,SOLF,NOTE_COLORS,PENTA,persist,on,bounce,wiggle,holdButton} from './core.js';
+// La griglia del ritmo, la riga della melodia (anche nella stanza Tastiera), dadi, Ascolta, pulisci, indietro.
+import {$,el,state,rt,ROWS,DRUMS,SOLF,NOTE_COLORS,PENTA_STEPS,scaleNotes,persist,on,emit,bounce,wiggle,holdButton} from './core.js';
 import {A,drum,blip} from './audio.js';
 import {togglePlay} from './seq.js';
 
@@ -21,16 +21,45 @@ export function undo(){
 }
 export function clearUndo(){undoStack.length=0;$('#undo').disabled=true}
 
+/* ---------- melodia: tocca per cambiare nota, trascina per disegnarla ---------- */
+let paint=null,paintEnded=0;
+function paintMove(e){
+  if(!paint)return;
+  if(!paint.moved){
+    if(Math.hypot(e.clientX-paint.x,e.clientY-paint.y)<10)return;
+    paint.moved=true;snapshot();
+  }
+  let s=-1;
+  for(let k=0;k<paint.set.length;k++){const r=paint.set[k].getBoundingClientRect();if(e.clientX>=r.left-4&&e.clientX<=r.right+4){s=k;break}}
+  if(s<0)return;
+  // dito in su = nota più alta, sempre sulle note della canzone
+  const P=scaleNotes(),n=P[Math.max(0,Math.min(P.length-1,paint.i+Math.round((paint.y-e.clientY)/16)))];
+  if(state.melody[s]!==n){state.melody[s]=n;rt.lastNote=n;blip(n);paintMelody()}
+}
+function paintEnd(){
+  if(paint&&paint.moved){paintEnded=performance.now();persist()}
+  paint=null;
+}
 function melCell(s,set){
   const c=el('button','cell mel'+(s&&s%4===0?' g':''));
   c.setAttribute('aria-label','Melodia '+(s+1));
   c.onclick=()=>{
-    // ogni tocco cambia nota (solo note che stanno bene insieme), poi si spegne
-    const cur=state.melody[s],i=PENTA.indexOf(cur);
-    const next=cur==null?PENTA[0]:(i<0||i===PENTA.length-1)?null:PENTA[i+1];
+    if(performance.now()-paintEnded<300)return; // era un disegno, non un tocco
+    // ogni tocco sale di una nota (solo note che stanno bene insieme), poi si spegne
+    const P=scaleNotes(),cur=state.melody[s],i=P.indexOf(cur);
+    const next=cur==null?P[0]:(i<0||i===P.length-1)?null:P[i+1];
     state.melody[s]=next;if(next!=null){rt.lastNote=next;blip(next)}
     paintMelody();persist();
   };
+  c.addEventListener('pointerdown',e=>{
+    if(e.button>0)return;
+    const P=scaleNotes(),base=state.melody[s]??rt.lastNote;
+    let i=P.indexOf(base);if(i<0)i=P.reduce((b,n,k)=>Math.abs(n-base)<Math.abs(P[b]-base)?k:b,0);
+    paint={x:e.clientX,y:e.clientY,i,set,moved:false};
+    try{c.setPointerCapture(e.pointerId)}catch(err){}
+  });
+  c.addEventListener('pointermove',paintMove);
+  c.addEventListener('pointerup',paintEnd);c.addEventListener('pointercancel',paintEnd);
   set.push(c);cols[s].push(c);return c;
 }
 
@@ -43,8 +72,10 @@ export function buildGrid(){
   ROWS.forEach((r,ri)=>{
     const rb=el('button','rowbtn','<span class="face">'+r.emoji+'</span>'+(ri?'<kbd>'+ri+'</kbd>':''));
     rb.id='row-'+r.id;rb.style.setProperty('--c',r.color);
-    rb.title=r.name+' — tieni premuto per svuotare la riga';rb.setAttribute('aria-label',r.name);
+    rb.title=r.name+(ri?' — trascina su o giù per farlo più acuto o più grave;':' —')+' tieni premuto per svuotare la riga';
+    rb.setAttribute('aria-label',r.name);
     holdButton(rb,800,()=>{
+      if(rb._drag)return; // stava cambiando l'altezza, non svuotando
       snapshot();
       if(r.id==='mel')state.melody.fill(null);else state.pattern[r.id].fill(false);
       paintAll();persist();wiggle(rb);
@@ -53,6 +84,19 @@ export function buildGrid(){
       else if(r.id==='voice'&&!rt.activeClip)wiggle($('#rec'));
       else drum(r.id);
     });
+    if(ri){ // trascina l'animale: su = piccolo e acuto, giù = grande e grave
+      let y0=null,p0=0;
+      rb.addEventListener('pointerdown',e=>{y0=e.clientY;p0=state.pitch[r.id]||0;rb._drag=false;try{rb.setPointerCapture(e.pointerId)}catch(err){}});
+      rb.addEventListener('pointermove',e=>{
+        if(y0==null)return;
+        const p=Math.max(-4,Math.min(4,p0+Math.round((y0-e.clientY)/14)));
+        if(p===(state.pitch[r.id]||0))return;
+        rb._drag=true;rb.classList.remove('holding');
+        if(p)state.pitch[r.id]=p;else delete state.pitch[r.id];
+        paintPitch();drum(r.id);persist();
+      });
+      ['pointerup','pointercancel'].forEach(ev=>rb.addEventListener(ev,()=>{y0=null}));
+    }
     const head=el('div','rowhead');head.id='head-'+r.id;
     const zz=el('button','zz','💤');zz.title='Dormi: i dadi non cambiano questa riga';
     zz.setAttribute('aria-label',r.name+': dormi (i dadi non la cambiano)');
@@ -87,7 +131,7 @@ export function paintMelody(){
 export function paintAll(){
   document.querySelectorAll('.cell[data-row]').forEach(c=>{
     const v=state.pattern[c.dataset.row][+c.dataset.step];c.classList.toggle('on',v);c.setAttribute('aria-pressed',v)});
-  paintMelody();paintSleep();
+  paintMelody();paintSleep();paintPitch();
 }
 function paintSleep(){
   ROWS.forEach(r=>{
@@ -97,6 +141,10 @@ function paintSleep(){
     cells.forEach(c=>c.classList.toggle('asleep',z));
   });
 }
+// l'animale diventa più piccolo se il tamburo è acuto, più grande se è grave
+function paintPitch(){
+  DRUMS.forEach(d=>{const f=$('#row-'+d.id+' .face');if(f)f.style.transform='scale('+(1-(state.pitch[d.id]||0)*.1)+')'});
+}
 export function showCursor(){
   $('#grid').classList.toggle('writing',rt.writeMode);$('#strip').classList.toggle('writing',rt.writeMode);
   melSets.forEach(set=>set.forEach((c,s)=>{
@@ -105,6 +153,7 @@ export function showCursor(){
   }));
 }
 export const bounceMel=s=>melSets.forEach(set=>bounce(set[s]));
+const cellEl=(row,s)=>row==='mel'?melSets[0]&&melSets[0][s]:document.querySelector('#grid .cell[data-row="'+row+'"][data-step="'+s+'"]');
 
 function setNow(s){
   if(now>=0&&cols[now])cols[now].forEach(c=>c.classList.remove('now'));
@@ -112,6 +161,18 @@ function setNow(s){
 }
 on('step',s=>{setNow(s);if(s%2===0)bounce($('#mascot'))});
 on('play',p=>{if(!p)setNow(-1);showCursor()});
+
+/* ---------- la tonalità la sceglie la canzone, non il bambino ---------- */
+// Cerca le cinque note che contengono più note della melodia. Cambia solo a inizio giro o da fermi.
+export function rekey(){
+  const notes=state.melody.slice(0,state.steps).filter(n=>n!=null);if(!notes.length)return;
+  const score=r=>notes.filter(n=>PENTA_STEPS.includes(((n-r)%12+12)%12)).length;
+  let best=state.root,top=score(best);
+  for(let r=0;r<12;r++){const sc=score(r);if(sc>top){top=sc;best=r}}
+  if(best!==state.root){state.root=best;persist();emit('key')}
+}
+on('step',s=>{if(s===0)rekey()});
+on('dirty',()=>{if(!rt.playing)rekey()});
 
 /* ---------- dadi: tiri musicali, mai celle a caso ---------- */
 const R=p=>Math.random()<p,pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -129,25 +190,25 @@ function drumBar(id,snare){
   }
   return a;
 }
-// melodia a piccoli passi sulle note della Magia
-function melBar(from){
-  let i=from??Math.floor(Math.random()*PENTA.length);const a=[];
+// melodia a piccoli passi sulle note della canzone
+function melBar(P,from){
+  let i=from>=0?from:Math.floor(Math.random()*P.length);const a=[];
   for(let b=0;b<8;b++){
     if(b&&R(b%2?.45:.15)){a.push(null);continue}
-    a.push(PENTA[i]);i=Math.max(0,Math.min(PENTA.length-1,i+pick([-1,-1,0,1,1,2,-2])));
+    a.push(P[i]);i=Math.max(0,Math.min(P.length-1,i+pick([-1,-1,0,1,1,2,-2])));
   }
   return a;
 }
 // un ritmo intero nuovo; la seconda battuta riprende la prima con un piccolo finale diverso
 function candidate(){
-  const c={pattern:{},melody:[]},snare=drumBar('snare');
+  const c={pattern:{},melody:[]},snare=drumBar('snare'),P=scaleNotes();
   DRUMS.forEach(d=>{
     const bar=d.id==='snare'?snare:drumBar(d.id,snare),two=bar.slice();
     if(d.id==='snare'&&R(.6))two[7]=true;
     if(d.id==='kick'&&R(.4))two[7]=!two[7];
     c.pattern[d.id]=bar.concat(two);
   });
-  const m=melBar(),m2=m.slice(),tail=melBar(PENTA.indexOf(m.find(n=>n!=null)));
+  const m=melBar(P,-1),m2=m.slice(),tail=melBar(P,P.indexOf(m.find(n=>n!=null)));
   for(let b=5;b<8;b++)m2[b]=tail[b];
   c.melody=m.concat(m2);
   return c;
@@ -167,29 +228,46 @@ export function rollBig(){
   if(!rt.playing){const t=A.ctx.currentTime+.01;drum('snare',t);drum('snare',t+.09);drum('snare',t+.18);drum('kick',t+.27);drum('clap',t+.27)}
   warm=0;afterRoll();
 }
-// dado piccolo: cambia poche celle, sempre verso un altro ritmo che suona bene.
-// Toccato più volte di fila, cambia ogni volta un po' di più.
-let warm=0,lastSmall=-1e9;
-export function rollSmall(){
-  const rows=awake();if(!rows.length){wiggle($('#diceS'));return}
-  snapshot();
-  const t=performance.now();warm=t-lastSmall<4000?Math.min(warm+1,5):0;lastSmall=t;
+// cambia `n` celle, sempre verso un altro ritmo che suona bene
+function mutate(n){
+  const rows=awake();if(!rows.length)return [];
   let diffs=[];
   for(let tries=0;tries<4&&!diffs.length;tries++){
     const c=candidate();
     rows.forEach(r=>{for(let s=0;s<state.steps;s++){const v=getCell(c,r.id,s);if(v!==getCell(state,r.id,s))diffs.push([r.id,s,v])}});
   }
   for(let i=diffs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[diffs[i],diffs[j]]=[diffs[j],diffs[i]]}
-  const changed=diffs.slice(0,2+warm*2);
+  const changed=diffs.slice(0,n);
   changed.forEach(([row,s,v])=>setCell(row,s,v));
+  return changed;
+}
+// dado piccolo: cambia poche celle. Toccato più volte di fila, cambia ogni volta un po' di più.
+let warm=0,lastSmall=-1e9;
+export function rollSmall(){
+  if(!awake().length){wiggle($('#diceS'));return}
+  snapshot();
+  const t=performance.now();warm=t-lastSmall<4000?Math.min(warm+1,5):0;lastSmall=t;
+  const changed=mutate(2+warm*2);
   wiggle($('#diceS'));if(!rt.playing)drum('hat');
   afterRoll();
-  // fa vedere quali celle sono cambiate
-  changed.forEach(([row,s])=>{
-    const c=row==='mel'?melSets[0]&&melSets[0][s]:document.querySelector('#grid .cell[data-row="'+row+'"][data-step="'+s+'"]');
-    bounce(c);
-  });
+  changed.forEach(([row,s])=>bounce(cellEl(row,s))); // fa vedere quali celle sono cambiate
 }
+
+/* ---------- Ascolta: la canzone continua a cambiare da sola ---------- */
+let listening=false,loops=0;
+export function setListen(v){
+  if(v===listening)return;listening=v;
+  const b=$('#listen');b.classList.toggle('sel',v);b.setAttribute('aria-pressed',v);
+  if(v){snapshot();loops=0;if(!rt.playing)togglePlay()} // un solo "Indietro" riporta alla canzone di prima
+}
+export const isListening=()=>listening;
+on('step',s=>{
+  if(s!==0||!listening)return;
+  if(++loops%(state.steps===16?2:4))return;
+  const changed=mutate(3);paintAll();persist();changed.forEach(([row,st])=>bounce(cellEl(row,st)));
+});
+on('play',p=>{if(!p)setListen(false)});
+
 export function clearAll(){
   snapshot();
   DRUMS.forEach(d=>state.pattern[d.id].fill(false));state.melody.fill(null);rt.cursor=0;
