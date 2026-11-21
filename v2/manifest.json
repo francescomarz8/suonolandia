@@ -1,0 +1,13 @@
+{
+  "name": "Suonolandia",
+  "short_name": "Suonolandia",
+  "description": "Un giocattolo musicale per bambini",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#FFD23F",
+  "theme_color": "#FFD23F",
+  "lang": "it",
+  "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
+}

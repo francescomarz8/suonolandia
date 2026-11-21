@@ -16,11 +16,12 @@ function tick(){
     visualQ.push({s,t});
     nextTime+=stepDur();step=(s+1)%state.steps;
   }
+  emit('clock:pump',A.ctx.currentTime+.12);
 }
 export function togglePlay(){
   rt.playing=!rt.playing;
-  if(rt.playing){A.ctx.resume();step=0;nextTime=A.ctx.currentTime+.06;tick();timer=setInterval(tick,25)}
-  else{clearInterval(timer);visualQ.length=0;rt.curStep=-1;stopSeqVoices()}
+  if(rt.playing){A.ctx.resume();step=0;nextTime=A.ctx.currentTime+.06;emit('clock:start',nextTime);tick();timer=setInterval(tick,25)}
+  else{clearInterval(timer);visualQ.length=0;rt.curStep=-1;stopSeqVoices();emit('clock:stop')}
   emit('play',rt.playing);
 }
 export function startFrames(){

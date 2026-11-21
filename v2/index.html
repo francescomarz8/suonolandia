@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Suonolandia 2</title>
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#FFD23F">
 </head>
 <body>
 
@@ -15,7 +18,7 @@
 
 <header>
   <div class="logo"><span id="mascot" aria-hidden="true">🐙</span><h1 id="title">Suonolandia</h1>
-    <button id="save" class="btn sec" aria-label="Salva la canzone (tieni premuto)" title="Per i grandi: tieni premuto per registrare 4 giri e scaricare la canzone (.wav)">💾</button>
+    <button id="gear" class="btn sec" aria-label="Angolo dei grandi (tieni premuto)" title="Per i grandi: tieni premuto">⚙️</button>
     <button id="fs" class="btn sec" aria-label="Schermo intero" title="Schermo intero">⤢</button>
   </div>
   <div id="midi" role="status"></div>
@@ -31,6 +34,7 @@
     <button class="roomBtn" data-room="ritmo" style="--c:#FFD23F" aria-label="Stanza del ritmo" title="Ritmo">🥁</button>
     <button class="roomBtn" data-room="voce" style="--c:#C9A7F5" aria-label="Stanza della voce" title="Voce">🎤</button>
     <button class="roomBtn" data-room="tastiera" style="--c:#8CC8F2" aria-label="Stanza della tastiera" title="Tastiera">🎹</button>
+    <button class="roomBtn" data-room="canzoni" style="--c:#8FE3B9" aria-label="Le mie canzoni" title="Le mie canzoni">📚</button>
   </nav>
 
   <main>
@@ -62,8 +66,36 @@
       <div class="stripwrap"><span class="stripIcon" aria-hidden="true">🎵</span><div id="strip"></div></div>
       <div id="keys"></div>
     </section>
+    <section class="room" id="room-canzoni" aria-label="Le mie canzoni">
+      <div id="shelf"></div>
+    </section>
   </main>
 </div>
+
+<dialog id="parent" aria-labelledby="pTitle">
+  <div class="phead"><h2 id="pTitle">Angolo dei grandi</h2><button id="pClose" class="pbtn">Chiudi</button></div>
+
+  <h3>Volume massimo</h3>
+  <input type="range" id="pVol" min="10" max="100" step="5" aria-label="Volume massimo">
+
+  <h3>Questa canzone</h3>
+  <div class="prow">
+    <button id="pWav" class="pbtn">Registra 4 giri in un file audio (.wav)</button>
+    <button id="pExport" class="pbtn">Esporta la canzone</button>
+    <button id="pImport" class="pbtn">Importa una canzone</button>
+    <input type="file" id="pFile" accept=".suonolandia,application/json" hidden>
+  </div>
+  <p class="muted">“Esporta” salva ritmo, melodia e registrazioni in un file, per portarli su un altro computer. Le canzoni si salvano già da sole nello scaffale 📚 di questo browser.</p>
+  <p class="muted" id="pMsg" role="status"></p>
+
+  <h3>Strumenti MIDI (Duo)</h3>
+  <div id="pDevices"></div>
+  <label class="prow"><input type="checkbox" id="pClock"> Manda il tempo agli strumenti (clock, Start e Stop)</label>
+  <p class="muted" id="pOuts"></p>
+  <label class="prow">Anticipa o ritarda il tempo mandato
+    <input type="range" id="pNudge" min="-150" max="150" step="5" aria-label="Correzione del tempo in millisecondi"> <b id="pNudgeVal"></b></label>
+  <p class="muted">Se la drum machine suona in ritardo rispetto al computer, sposta verso sinistra; se è in anticipo, verso destra. Sul DrumBrute premi Sync finché si accende USB.</p>
+</dialog>
 
 <script type="module" src="js/main.js"></script>
 </body>

@@ -1,22 +1,39 @@
-// Avvio, stanze, comandi comuni, schermo e tocco, salvataggio della canzone.
-import {$,state,rt,loadState,persist,on,wiggle,holdButton,SAVE_LOOPS} from './core.js';
-import {A,initAudio,drum,wavBlob} from './audio.js';
-import {togglePlay,startFrames,stepDur} from './seq.js';
+// Avvio, stanze, comandi comuni, schermo e tocco.
+import {$,state,rt,loadState,persist,on} from './core.js';
+import {A,initAudio,drum} from './audio.js';
+import {togglePlay,startFrames} from './seq.js';
 import {buildGrid,surprise,clearAll,undo,setSteps,paintSteps} from './grid.js';
-import {buildKeys,buildSounds,setMagic,setWrite} from './keys.js';
+import {buildKeys,buildSounds,setSound,setMagic,setWrite} from './keys.js';
 import {loadClips,renderClips,toggleRec,_addTestClip} from './voice.js';
-import {initMIDI} from './midi.js';
+import {initMIDI,onMIDI,_setAccess,duo} from './midi.js';
+import {initShelf,renderShelf,openProject,newProject,exportProject,importProject} from './shelf.js';
+import {initParent,applyVolume} from './parent.js';
 
 /* ---------- stanze ---------- */
+const ROOMS=['ritmo','voce','tastiera','canzoni'];
 function setRoom(id){
-  state.room=id;persist();
+  if(!ROOMS.includes(id))id='ritmo';
+  if(id!=='canzoni'){state.room=id;persist()}else renderShelf();
   document.querySelectorAll('.room').forEach(r=>r.classList.toggle('on',r.id==='room-'+id));
   document.querySelectorAll('.roomBtn').forEach(b=>{const v=b.dataset.room===id;b.classList.toggle('on',v);b.setAttribute('aria-pressed',v)});
 }
 document.querySelectorAll('.roomBtn').forEach(b=>b.onclick=()=>setRoom(b.dataset.room));
+on('room',setRoom);
 
 /* ---------- comandi comuni ---------- */
 on('play',p=>{const b=$('#play');b.classList.toggle('on',p);b.textContent=p?'⏹️':'▶️';b.setAttribute('aria-label',p?'Ferma':'Suona')});
+
+// ridisegna tutto quando si apre un'altra canzone
+async function showProject(stay){
+  await loadClips();
+  buildGrid();renderClips();
+  setSound(state.sound==='voice'&&!rt.activeClip?'piano':state.sound);
+  setMagic(state.magic);setWrite(false);paintSteps();
+  $('#tempo').value=state.bpm;$('#undo').disabled=true;
+  if(!stay)setRoom('ritmo');
+  renderShelf();
+}
+on('project',showProject);
 
 /* ---------- schermo e tocco ---------- */
 // su schermi piccoli rimpicciolisce tutto perché stia in una schermata
@@ -30,35 +47,9 @@ addEventListener('pointerdown',e=>{if(e.pointerType==='touch')document.body.clas
 addEventListener('keydown',()=>document.body.classList.remove('touch'),true);
 addEventListener('contextmenu',e=>e.preventDefault());
 // niente focus che resta sui bottoni: la barra spaziatrice deve solo suonare/fermare
-addEventListener('pointerup',()=>setTimeout(()=>{const a=document.activeElement;if(a&&a!==document.body)a.blur()},0));
+addEventListener('pointerup',()=>setTimeout(()=>{
+  const a=document.activeElement;if(a&&a!==document.body&&!a.closest('dialog'))a.blur()},0));
 $('#fs').onclick=()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{})};
-
-/* ---------- salva canzone (per i grandi) ---------- */
-let saver=null,saveTimer=null;
-function stopSave(){
-  if(!saver)return;clearTimeout(saveTimer);
-  if(rt.playing)togglePlay();
-  const s=saver;setTimeout(()=>s.state!=='inactive'&&s.stop(),1200); // lascia finire le code
-}
-function startSave(){
-  const b=$('#save');
-  if(rt.playing)togglePlay();
-  const chunks=[];saver=new MediaRecorder(A.saveDest.stream);
-  saver.ondataavailable=e=>e.data.size&&chunks.push(e.data);
-  saver.onstop=async()=>{
-    const type=saver.mimeType||'audio/webm';saver=null;
-    b.classList.remove('recording');b.textContent='💾';
-    let blob=new Blob(chunks,{type}),ext=type.includes('mp4')?'m4a':type.includes('ogg')?'ogg':'webm';
-    try{blob=wavBlob(await A.ctx.decodeAudioData(await blob.arrayBuffer()));ext='wav'}catch(e){}
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='la-mia-canzone.'+ext;a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  };
-  saver.start();b.classList.add('recording');b.textContent='⏺️';
-  togglePlay();
-  saveTimer=setTimeout(stopSave,state.steps*SAVE_LOOPS*stepDur()*1000+60);
-}
-$('#save').onclick=()=>{if(saver)stopSave();else wiggle($('#save'))};
-holdButton($('#save'),1200,()=>{if(!saver)startSave()});
 
 /* ---------- avvio ---------- */
 loadState();
@@ -78,12 +69,17 @@ $('#write').onclick=()=>setWrite(!rt.writeMode);
 $('#magic').onclick=()=>setMagic(!state.magic);
 $('#startBtn').onclick=async()=>{
   $('#startBtn').disabled=true;
-  initAudio();A.ctx.resume();
-  await loadClips();
-  buildGrid();buildKeys();buildSounds();renderClips();setMagic(state.magic);paintSteps();setRoom(state.room);initMIDI();
+  initAudio();applyVolume();A.ctx.resume();
+  await initShelf();await loadClips();
+  buildGrid();buildKeys();buildSounds();renderClips();setMagic(state.magic);paintSteps();setRoom(state.room);
+  initParent();initMIDI();
   $('#start').remove();drum('boing');startFrames();
   document.body.dataset.ready='1';
 };
 
+// funziona anche senza internet dopo la prima visita
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+
 // per le prove automatiche
-window.__suono={state,rt,A,togglePlay,surprise,clearAll,undo,setSteps,setRoom,_addTestClip};
+window.__suono={state,rt,A,duo,togglePlay,surprise,clearAll,undo,setSteps,setRoom,_addTestClip,
+  openProject,newProject,exportProject,importProject,onMIDI,_setAccess};

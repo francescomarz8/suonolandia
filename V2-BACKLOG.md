@@ -1,7 +1,9 @@
 # Suonolandia V2 — backlog
 
 V1 is frozen as tag `v1.0` and stays online at https://francescomarz8.github.io/suonolandia/.
-Nothing here is built yet. Sizes: **S** = an evening, **M** = a few sessions, **L** = a real project.
+**Status (21 Nov 2026), on branch `v2`:** built and tested with simulated devices — 1.1 rooms, 1.2 modules, 1.3 autosave with recordings, 1.4 song shelf, 1.5 offline, 1.6 export/import, 1.8 parent corner (volume, saves, MIDI), 7.1 8/16 steps, 10.1 test page, 10.2 clock out, 10.3 sound per device (in the parent corner), 10.4 pad learning, 10.6 timing nudge. Not built: 1.7 avatars, play timer, 10.5 knobs and joystick, 10.7 player corners, 10.8–10.11. Not yet tried with the real DrumBrute and MPK.
+
+Sizes: **S** = an evening, **M** = a few sessions, **L** = a real project.
 ★ = your idea, ＋ = added.
 
 ## Rules that keep it a toy for 4–7 year olds

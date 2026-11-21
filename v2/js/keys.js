@@ -32,22 +32,25 @@ export function buildKeys(){
   box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
 }
 
-export function press(n,vel){
+// `sound` e `src` servono al Duo: ogni strumento collegato può avere il suo suono.
+export function press(n,vel,sound,src=''){
   if(!A.ctx)return;
-  if(sustained.has(n)){sustained.delete(n);const o=held.get(n);if(o){held.delete(n);o.stop(A.ctx.currentTime)}}
-  if(held.has(n))return;
-  held.set(n,makeVoice(n,vel,A.ctx.currentTime,state.sound,false));
+  const k=src+':'+n;
+  if(sustained.has(k)){sustained.delete(k);const o=held.get(k);if(o){held.delete(k);o.stop(A.ctx.currentTime)}}
+  if(held.has(k))return;
+  held.set(k,makeVoice(n,vel,A.ctx.currentTime,sound||state.sound,false));
   rt.lastNote=n;keyEls[n]&&keyEls[n].classList.add('down');
   if(rt.writeMode)writeNote(n);
 }
-export function release(n,force){
-  const v=held.get(n);if(!v)return;
+export function release(n,force,src=''){
+  const k=src+':'+n,v=held.get(k);if(!v)return;
   keyEls[n]&&keyEls[n].classList.remove('down');
-  if(pedal&&!force){sustained.add(n);return}
-  held.delete(n);sustained.delete(n);v.stop(A.ctx.currentTime);
+  if(pedal&&!force){sustained.add(k);return}
+  held.delete(k);sustained.delete(k);v.stop(A.ctx.currentTime);
 }
+function releaseKey(k){const i=k.lastIndexOf(':');release(+k.slice(i+1),true,k.slice(0,i))}
 export function setPedal(down){
-  pedal=down;if(!down)[...sustained].forEach(k=>release(k,true));
+  pedal=down;if(!down)[...sustained].forEach(releaseKey);
 }
 function writeNote(n){
   let s;
@@ -96,4 +99,4 @@ addEventListener('keydown',e=>{
     bounce($('#row-'+d.id))}
 });
 addEventListener('keyup',e=>{if(e.code in KEYMAP)release(KEYMAP[e.code])});
-addEventListener('blur',()=>{pedal=false;[...held.keys()].forEach(n=>release(n,true))});
+addEventListener('blur',()=>{pedal=false;[...held.keys()].forEach(releaseKey)});

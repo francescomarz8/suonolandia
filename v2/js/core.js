@@ -30,27 +30,35 @@ export const CLIP_LOOK=[['🦁','#FF9F1C'],['🐱','#F15BB5'],['🐶','#4D9DE0']
 export const MAX_CLIPS=6, MAX_REC=8, MAX_VOICES=10, SAVE_LOOPS=4;
 
 // Quello che viene salvato (il progetto).
-export const state={bpm:100,sound:'piano',magic:true,steps:8,room:'ritmo',activeClipId:null,pattern:{},melody:Array(MAX_STEPS).fill(null)};
-DRUMS.forEach(d=>state.pattern[d.id]=Array(MAX_STEPS).fill(false));
+export const blankState=()=>{
+  const s={bpm:100,sound:'piano',magic:true,steps:8,room:'ritmo',activeClipId:null,pattern:{},melody:Array(MAX_STEPS).fill(null)};
+  DRUMS.forEach(d=>s.pattern[d.id]=Array(MAX_STEPS).fill(false));return s;
+};
+export const state=blankState();
 const KEY='suonolandia-v2';
 const fitLen=(a,fill)=>{const out=Array(MAX_STEPS).fill(fill);if(Array.isArray(a))a.slice(0,MAX_STEPS).forEach((v,i)=>out[i]=v);return out};
-export function loadState(){
-  try{
-    const s=JSON.parse(localStorage.getItem(KEY));if(!s)return;
-    if(s.bpm>=60&&s.bpm<=160)state.bpm=s.bpm;
-    if(SOUNDS.some(x=>x.id===s.sound))state.sound=s.sound;
-    if(typeof s.magic==='boolean')state.magic=s.magic;
-    if(s.steps===8||s.steps===16)state.steps=s.steps;
-    if(['ritmo','voce','tastiera'].includes(s.room))state.room=s.room;
-    state.activeClipId=s.activeClipId??null;
-    state.melody=fitLen(s.melody,null);
-    DRUMS.forEach(d=>state.pattern[d.id]=fitLen(s.pattern&&s.pattern[d.id],false));
-  }catch(e){}
+// copia in `state` un progetto salvato, controllando ogni valore
+export function applyState(s){
+  Object.assign(state,blankState());if(!s)return;
+  if(s.bpm>=60&&s.bpm<=160)state.bpm=s.bpm;
+  if(SOUNDS.some(x=>x.id===s.sound))state.sound=s.sound;
+  if(typeof s.magic==='boolean')state.magic=s.magic;
+  if(s.steps===8||s.steps===16)state.steps=s.steps;
+  if(['ritmo','voce','tastiera'].includes(s.room))state.room=s.room;
+  state.activeClipId=s.activeClipId??null;
+  state.melody=fitLen(s.melody,null);
+  DRUMS.forEach(d=>state.pattern[d.id]=fitLen(s.pattern&&s.pattern[d.id],false));
 }
-export const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
+export function loadState(){
+  try{const s=JSON.parse(localStorage.getItem(KEY));applyState(s);if(s&&s._project)rt.projectId=s._project}catch(e){}
+}
+export const persist=()=>{
+  try{localStorage.setItem(KEY,JSON.stringify({...state,_project:rt.projectId}))}catch(e){}
+  emit('dirty');
+};
 
 // Quello che vive solo mentre si gioca.
-export const rt={clips:[],activeClip:null,clipCount:0,lastNote:60,writeMode:false,cursor:0,
+export const rt={projectId:'current',clips:[],activeClip:null,clipCount:0,lastNote:60,writeMode:false,cursor:0,
   playing:false,curStep:-1,curStepTime:0,muted:new URLSearchParams(location.search).has('muto')};
 
 // Messaggi fra moduli: on('step',fn) / emit('step',3)

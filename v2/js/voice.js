@@ -5,16 +5,18 @@ import {putClip,delClip,allClips} from './store.js';
 import {paintAll} from './grid.js';
 import {setSound} from './keys.js';
 
-const record=c=>({id:c.id,project:'current',data:c.buf.getChannelData(0).slice(),sr:c.buf.sampleRate,fx:c.fx,emoji:c.emoji,color:c.color});
+export const record=c=>({id:c.id,project:rt.projectId,data:c.buf.getChannelData(0).slice(),sr:c.buf.sampleRate,fx:c.fx,emoji:c.emoji,color:c.color});
 const save=c=>putClip(record(c));
 
 export async function loadClips(){
-  const rows=(await allClips()).sort((a,b)=>a.id-b.id);
+  const all=await allClips();
+  rt.clipCount=all.reduce((m,c)=>Math.max(m,c.id),0);
+  const rows=all.filter(c=>c.project===rt.projectId).sort((a,b)=>a.id-b.id);
+  rt.clips.forEach(c=>{if(c.src){try{c.src.stop()}catch(e){}}});
   rt.clips=rows.map(r=>{
     const buf=A.ctx.createBuffer(1,r.data.length,r.sr);buf.copyToChannel(r.data,0);
     return {id:r.id,buf,fx:r.fx||'normal',emoji:r.emoji,color:r.color,src:null};
   });
-  rt.clipCount=rt.clips.reduce((m,c)=>Math.max(m,c.id),0);
   rt.activeClip=rt.clips.find(c=>c.id===state.activeClipId)||rt.clips[rt.clips.length-1]||null;
   if(!rt.activeClip)state.pattern.voice.fill(false);
 }
