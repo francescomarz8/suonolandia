@@ -2,7 +2,7 @@
 import {$,state,rt,loadState,persist,on} from './core.js';
 import {A,initAudio,drum} from './audio.js';
 import {togglePlay,startFrames} from './seq.js';
-import {buildGrid,surprise,clearAll,undo,setSteps,paintSteps} from './grid.js';
+import {buildGrid,rollBig,rollSmall,clearAll,undo,clearUndo,setSteps,paintSteps} from './grid.js';
 import {buildKeys,buildSounds,setSound,setMagic,setWrite} from './keys.js';
 import {loadClips,renderClips,toggleRec,_addTestClip} from './voice.js';
 import {initMIDI,onMIDI,_setAccess,duo} from './midi.js';
@@ -29,7 +29,7 @@ async function showProject(stay){
   buildGrid();renderClips();
   setSound(state.sound==='voice'&&!rt.activeClip?'piano':state.sound);
   setMagic(state.magic);setWrite(false);paintSteps();
-  $('#tempo').value=state.bpm;$('#undo').disabled=true;
+  $('#tempo').value=state.bpm;clearUndo();
   if(!stay)setRoom('ritmo');
   renderShelf();
 }
@@ -57,7 +57,8 @@ $('#title').innerHTML=[...'Suonolandia'].map(c=>'<span>'+c+'</span>').join('');
 $('#tempo').value=state.bpm;
 $('#tempo').oninput=e=>{state.bpm=+e.target.value;persist()};
 $('#play').onclick=togglePlay;
-$('#dice').onclick=surprise;
+$('#diceB').onclick=rollBig;
+$('#diceS').onclick=rollSmall;
 $('#clear').onclick=clearAll;
 $('#undo').onclick=undo;
 $('#steps').onclick=()=>setSteps(state.steps===8?16:8);
@@ -81,5 +82,5 @@ $('#startBtn').onclick=async()=>{
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 // per le prove automatiche
-window.__suono={state,rt,A,duo,togglePlay,surprise,clearAll,undo,setSteps,setRoom,_addTestClip,
+window.__suono={state,rt,A,duo,togglePlay,rollBig,rollSmall,clearAll,undo,setSteps,setRoom,_addTestClip,
   openProject,newProject,exportProject,importProject,onMIDI,_setAccess};

@@ -31,7 +31,7 @@ export const MAX_CLIPS=6, MAX_REC=8, MAX_VOICES=10, SAVE_LOOPS=4;
 
 // Quello che viene salvato (il progetto).
 export const blankState=()=>{
-  const s={bpm:100,sound:'piano',magic:true,steps:8,room:'ritmo',activeClipId:null,pattern:{},melody:Array(MAX_STEPS).fill(null)};
+  const s={bpm:100,sound:'piano',magic:true,steps:8,room:'ritmo',activeClipId:null,sleep:{},pattern:{},melody:Array(MAX_STEPS).fill(null)};
   DRUMS.forEach(d=>s.pattern[d.id]=Array(MAX_STEPS).fill(false));return s;
 };
 export const state=blankState();
@@ -46,6 +46,7 @@ export function applyState(s){
   if(s.steps===8||s.steps===16)state.steps=s.steps;
   if(['ritmo','voce','tastiera'].includes(s.room))state.room=s.room;
   state.activeClipId=s.activeClipId??null;
+  if(s.sleep)ROWS.forEach(r=>{if(s.sleep[r.id])state.sleep[r.id]=true});
   state.melody=fitLen(s.melody,null);
   DRUMS.forEach(d=>state.pattern[d.id]=fitLen(s.pattern&&s.pattern[d.id],false));
 }

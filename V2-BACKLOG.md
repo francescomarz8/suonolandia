@@ -1,7 +1,7 @@
 # Suonolandia V2 — backlog
 
 V1 is frozen as tag `v1.0` and stays online at https://francescomarz8.github.io/suonolandia/.
-**Status (21 Nov 2026), on branch `v2`:** built and tested with simulated devices — 1.1 rooms, 1.2 modules, 1.3 autosave with recordings, 1.4 song shelf, 1.5 offline, 1.6 export/import, 1.8 parent corner (volume, saves, MIDI), 7.1 8/16 steps, 10.1 test page, 10.2 clock out, 10.3 sound per device (in the parent corner), 10.4 pad learning, 10.6 timing nudge. Not built: 1.7 avatars, play timer, 10.5 knobs and joystick, 10.7 player corners, 10.8–10.11. Not yet tried with the real DrumBrute and MPK.
+**Status (21 Nov 2026), on branch `v2`:** built and tested with simulated devices — 1.1 rooms, 1.2 modules, 1.3 autosave with recordings, 1.4 song shelf, 1.5 offline, 1.6 export/import, 1.8 parent corner (volume, saves, MIDI), 7.1 8/16 steps, 10.1 test page, 10.2 clock out, 10.3 sound per device (in the parent corner), 10.4 pad learning, 10.6 timing nudge, 6.1 two dice with musical rolls and multi-level undo, 6.3 sleeping rows (a small 💤 toggle on each row). Not built: 1.7 avatars, play timer, 10.5 knobs and joystick, 10.7 player corners, 10.8–10.11. Not yet tried with the real DrumBrute and MPK.
 
 Sizes: **S** = an evening, **M** = a few sessions, **L** = a real project.
 ★ = your idea, ＋ = added.
@@ -89,9 +89,9 @@ Sizes: **S** = an evening, **M** = a few sessions, **L** = a real project.
 
 | # | Item | Size |
 |---|---|---|
-| 6.1 | Two dice: "a little different" (changes a few cells) and "all new" | S |
-| 6.2 | A die on each row | S |
-| 6.3 | Padlock on a row so the dice leave it alone | S |
+| 6.1 | **Built.** Two dice side by side in a corner of Ritmo: small = "a little different" (changes a few cells), big = "all new". Size tells the difference. Rolls are musical, not random cells: kick on the beat with an occasional extra, snare on 2 and 4 with a rare ghost note, hats spread evenly, melody in small steps on Magia notes, voice clip on one or two strong beats. Every roll is undoable. The big die shakes and lands with a short drum fill. Optional (+1 hour): a "warm" small die that changes a bit more each time it is tapped in a row. | S |
+| 6.2 | ~~A die on each row~~ — dropped: seven extra buttons would clutter Ritmo, and 6.3 does the same job in reverse. | — |
+| 6.3 | Lock = sleeping animal: a sleeping row is not changed by the dice. Reuse the same idea for mute in the DJ room (5.7). Open point: tapping a row's animal already plays its sound and holding it empties the row, so the "go to sleep" gesture needs its own control. | S |
 | 6.4 | Style dice with characters: rock, disco, march, lullaby, robot | M |
 | 6.5 | "Few ↔ many" slider per row that spreads hits evenly | S |
 | 6.6 | Melody shapes: stairs up, stairs down, jumps, echo of what you just played | S |
@@ -193,7 +193,7 @@ Because of this, the plan does not rely on defaults: step 10.1 measures them, an
 0. **Duo test page (10.1)** — tiny, and its answers shape the rest.
 1. **V2.0 Foundation + Duo core** — section 1, 7.1, and 10.2–10.7. Nothing is lost any more, and both children can play together.
 2. **V2.1 Sounds and voices** — 2.1, 2.3, 2.4, 2.6, 4.1, 4.4, 4.6, 3.2, 3.4.
-3. **V2.2 Dice and pages** — 6.1–6.6, 7.2, 7.4, 9.1.
+3. **V2.2 Dice and pages** — 6.1 and 6.3 first (agreed with the user on 21 Nov 2026), then 6.4–6.6, 7.2, 7.4, 9.1.
 4. **V2.3 DJ room** — 5.1–5.5, 5.7, 3.1.
 5. **V2.4 Export** — 8.1–8.3.
 6. Later: the L items (4.3, 4.5, 5.6, 7.6, 9.4, 9.5) and MIDI out.
